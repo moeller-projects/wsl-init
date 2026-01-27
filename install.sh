@@ -48,7 +48,7 @@ EOF
 # Default shell → zsh
 # --------------------------------------------------
 if [[ "$SHELL" != "$(command -v zsh)" ]]; then
-  chsh -s "$(command -v zsh)"
+  sudo usermod -s "$(command -v zsh)" "$USER"
 fi
 
 # --------------------------------------------------
