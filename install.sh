@@ -62,41 +62,31 @@ grep -q 'starship init zsh' "$HOME/.zshrc" 2>/dev/null || \
   echo 'eval "$(starship init zsh)"' >> "$HOME/.zshrc"
 
 # --------------------------------------------------
-# asdf version manager
+# mise version manager
 # --------------------------------------------------
-if [[ ! -d "$HOME/.asdf" ]]; then
-  git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.18.0
+if ! command -v mise >/dev/null; then
+  curl https://mise.jdx.dev/install.sh | sh
 fi
 
-grep -q '.asdf/asdf.sh' "$HOME/.zshrc" 2>/dev/null || cat <<'EOF' >> "$HOME/.zshrc"
-. "$HOME/.asdf/asdf.sh"
-. "$HOME/.asdf/completions/asdf.bash"
+grep -q 'mise activate zsh' "$HOME/.zshrc" 2>/dev/null || cat <<'EOF' >> "$HOME/.zshrc"
+eval "$(mise activate zsh)"
 EOF
 
-# Load asdf for current script
-# shellcheck disable=SC1091
-. "$HOME/.asdf/asdf.sh"
+# Load mise for current script
+eval "$(mise activate bash)"
 
 # --------------------------------------------------
 # Toolchains (Node + Bun + .NET)
 # --------------------------------------------------
-echo "[WSL] Installing toolchains via asdf"
-
-asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
-asdf plugin add bun https://github.com/cometkim/asdf-bun.git || true
-asdf plugin add dotnet https://github.com/emersonsoares/asdf-dotnet.git || true
+echo "[WSL] Installing toolchains via mise"
 
 NODE_VERSION="20.11.1"
 BUN_VERSION="1.1.4"
 DOTNET_VERSION="8.0.100"
 
-asdf install nodejs "$NODE_VERSION" || true
-asdf install bun "$BUN_VERSION" || true
-asdf install dotnet "$DOTNET_VERSION" || true
-
-asdf global nodejs "$NODE_VERSION"
-asdf global bun "$BUN_VERSION"
-asdf global dotnet "$DOTNET_VERSION"
+mise use -g node@"$NODE_VERSION" || true
+mise use -g bun@"$BUN_VERSION" || true
+mise use -g dotnet@"$DOTNET_VERSION" || true
 
 # --------------------------------------------------
 # Bun-based global tooling
