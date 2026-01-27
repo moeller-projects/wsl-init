@@ -4,10 +4,53 @@ set -euo pipefail
 echo "[WSL] Bootstrap starting"
 
 BOOTSTRAP_FLAG="$HOME/.wsl_bootstrap_done"
+FIRST_RUN=1
 if [[ -f "$BOOTSTRAP_FLAG" ]]; then
-  echo "[WSL] Already bootstrapped — exiting"
-  exit 0
+  echo "[WSL] Already bootstrapped — continuing update"
+  FIRST_RUN=0
 fi
+
+ensure_line() {
+  local line="$1"
+  local file="$2"
+
+  grep -qxF "$line" "$file" 2>/dev/null || echo "$line" >> "$file"
+}
+
+ensure_line_sudo() {
+  local line="$1"
+  local file="$2"
+
+  sudo grep -qxF "$line" "$file" 2>/dev/null || echo "$line" | sudo tee -a "$file" >/dev/null
+}
+
+ensure_wsl_systemd() {
+  local file="/etc/wsl.conf"
+
+  if sudo grep -qxF "systemd=true" "$file" 2>/dev/null; then
+    return
+  fi
+
+  if sudo grep -qxF "[boot]" "$file" 2>/dev/null; then
+    local tmp
+    tmp="$(mktemp)"
+    sudo awk '
+      BEGIN { in_boot=0; added=0 }
+      /^\[boot\]$/ { print; in_boot=1; next }
+      /^\[/ {
+        if (in_boot && !added) { print "systemd=true"; added=1 }
+        in_boot=0
+        print
+        next
+      }
+      { print }
+      END { if (in_boot && !added) { print "systemd=true" } }
+    ' "$file" > "$tmp"
+    sudo mv "$tmp" "$file"
+  else
+    printf "[boot]\nsystemd=true\n" | sudo tee -a "$file" >/dev/null
+  fi
+}
 
 # --------------------------------------------------
 # Distro check (Ubuntu / Debian)
@@ -39,10 +82,7 @@ sudo update-locale LANG=en_US.UTF-8
 # --------------------------------------------------
 # Enable systemd in WSL
 # --------------------------------------------------
-sudo tee /etc/wsl.conf >/dev/null <<EOF
-[boot]
-systemd=true
-EOF
+ensure_wsl_systemd
 
 # --------------------------------------------------
 # Default shell → zsh
@@ -58,14 +98,12 @@ if ! command -v starship >/dev/null; then
   curl -sS https://starship.rs/install.sh | sh -s -- -y
 fi
 
-grep -q 'starship init zsh' "$HOME/.zshrc" 2>/dev/null || \
-  echo 'eval "$(starship init zsh)"' >> "$HOME/.zshrc"
+ensure_line 'eval "$(starship init zsh)"' "$HOME/.zshrc"
 
 # --------------------------------------------------
 # mise version manager
 # --------------------------------------------------
 if ! command -v mise >/dev/null; then
-    sudo apt update -y && sudo apt install -y curl
     sudo install -dm 755 /etc/apt/keyrings
     curl -fSs https://mise.jdx.dev/gpg-key.pub | sudo tee /etc/apt/keyrings/mise-archive-keyring.asc 1> /dev/null
     echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.asc] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list
@@ -73,9 +111,7 @@ if ! command -v mise >/dev/null; then
     sudo apt install -y mise
 fi
 
-grep -q 'mise activate zsh' "$HOME/.zshrc" 2>/dev/null || cat <<'EOF' >> "$HOME/.zshrc"
-eval "$(mise activate zsh)"
-EOF
+ensure_line 'eval "$(mise activate zsh)"' "$HOME/.zshrc"
 
 # Load mise for current script
 eval "$(mise activate bash)"
@@ -89,22 +125,26 @@ NODE_VERSION="20.11.1"
 BUN_VERSION="1.1.4"
 DOTNET_VERSION="8.0.100"
 
-mise use -g node@"$NODE_VERSION" || true
-mise use -g bun@"$BUN_VERSION" || true
-mise use -g dotnet@"$DOTNET_VERSION" || true
+mise use -g node@"$NODE_VERSION"
+mise use -g bun@"$BUN_VERSION"
+mise use -g dotnet@"$DOTNET_VERSION"
 
 # --------------------------------------------------
 # Bun-based global tooling
 # --------------------------------------------------
 echo "[WSL] Installing JS tooling via Bun"
 
-bun add -g \
-  typescript \
-  eslint \
-  prettier \
-  pnpm \
-  nx \
-  @biomejs/biome
+if command -v bun >/dev/null; then
+  bun add -g \
+    typescript \
+    eslint \
+    prettier \
+    pnpm \
+    nx \
+    @biomejs/biome
+else
+  echo "[WSL] Bun not found; skipping global JS tooling install"
+fi
 
 # --------------------------------------------------
 # Git defaults
@@ -116,21 +156,17 @@ git config --global core.editor nvim
 # --------------------------------------------------
 # tmux defaults
 # --------------------------------------------------
-cat <<EOF > "$HOME/.tmux.conf"
-set -g mouse on
-setw -g mode-keys vi
-set -g history-limit 10000
-EOF
+ensure_line "set -g mouse on" "$HOME/.tmux.conf"
+ensure_line "setw -g mode-keys vi" "$HOME/.tmux.conf"
+ensure_line "set -g history-limit 10000" "$HOME/.tmux.conf"
 
 # --------------------------------------------------
 # Quality-of-life tweaks
 # --------------------------------------------------
-grep -q 'alias cat=batcat' "$HOME/.zshrc" 2>/dev/null || cat <<'EOF' >> "$HOME/.zshrc"
-alias cat=batcat
-alias find=fdfind
-EOF
+ensure_line "alias cat=batcat" "$HOME/.zshrc"
+ensure_line "alias find=fdfind" "$HOME/.zshrc"
 
-echo fs.inotify.max_user_watches=524288 | sudo tee /etc/sysctl.d/99-wsl.conf >/dev/null
+ensure_line_sudo "fs.inotify.max_user_watches=524288" "/etc/sysctl.d/99-wsl.conf"
 sudo sysctl --system >/dev/null
 
 # --------------------------------------------------
@@ -139,9 +175,53 @@ sudo sysctl --system >/dev/null
 mkdir -p "$HOME/dev"
 
 # --------------------------------------------------
+# Self-check (non-fatal)
+# --------------------------------------------------
+echo "[WSL] Self-check"
+set +e
+if command -v mise >/dev/null; then
+  echo "[WSL] mise: $(mise --version 2>/dev/null)"
+else
+  echo "[WSL] mise: missing"
+fi
+if command -v node >/dev/null; then
+  echo "[WSL] node: $(node --version 2>/dev/null)"
+else
+  echo "[WSL] node: missing"
+fi
+if command -v bun >/dev/null; then
+  echo "[WSL] bun: $(bun --version 2>/dev/null)"
+else
+  echo "[WSL] bun: missing"
+fi
+if command -v dotnet >/dev/null; then
+  echo "[WSL] dotnet: $(dotnet --version 2>/dev/null)"
+else
+  echo "[WSL] dotnet: missing"
+fi
+if command -v git >/dev/null; then
+  echo "[WSL] git: $(git --version 2>/dev/null)"
+else
+  echo "[WSL] git: missing"
+fi
+if command -v zsh >/dev/null; then
+  echo "[WSL] zsh: $(zsh --version 2>/dev/null)"
+else
+  echo "[WSL] zsh: missing"
+fi
+if command -v nvim >/dev/null; then
+  echo "[WSL] nvim: $(nvim --version 2>/dev/null | head -n 1)"
+else
+  echo "[WSL] nvim: missing"
+fi
+set -euo pipefail
+
+# --------------------------------------------------
 # Mark completion
 # --------------------------------------------------
 touch "$BOOTSTRAP_FLAG"
 
 echo "[WSL] Bootstrap complete"
-echo "[WSL] Run: wsl --shutdown (from Windows) and reopen the distro"
+if [[ "$FIRST_RUN" -eq 1 ]]; then
+  echo "[WSL] Run: wsl --shutdown (from Windows) and reopen the distro"
+fi
