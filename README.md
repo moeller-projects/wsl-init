@@ -1,5 +1,4 @@
-````markdown
-# WSL Bootstrap – asdf + Bun Developer Setup
+# WSL Bootstrap – mise + Bun Developer Setup
 
 Single-file, one-liner bootstrap script to turn a **fresh WSL distro** into a **reproducible, high-performance Linux dev environment**.
 
@@ -7,7 +6,7 @@ Designed for:
 - WSL 2
 - Ubuntu / Debian
 - Bun-first JavaScript workflow
-- `asdf` as the single version manager
+- `mise` as the single version manager
 - Idempotent, safe re-execution
 - Zero manual post-install steps
 
@@ -17,7 +16,7 @@ Designed for:
 
 - ✅ **One-liner install**
 - ✅ **Single `install.sh` file** (no sub-scripts)
-- ✅ **`asdf` for all toolchains**
+- ✅ **`mise` for all toolchains**
 - ✅ **Bun instead of npm**
 - ✅ **Node available for compatibility**
 - ✅ **.NET 8 preinstalled**
@@ -47,7 +46,7 @@ Run this **inside a fresh WSL distro**:
 ```bash
 sudo apt update && sudo apt install -y curl ca-certificates && \
 curl -fsSL https://raw.githubusercontent.com/moeller-projects/wsl-init/main/install.sh | bash
-````
+```
 
 After completion:
 
@@ -81,7 +80,7 @@ Then reopen the distro.
 
 ### Version Management
 
-* **asdf** `v0.14.0`
+* **mise** (installed via apt)
 
 ### Toolchains (Pinned)
 
@@ -130,7 +129,7 @@ No path hacks.
 ```text
 ~
 ├─ dev/              # all projects live here (Linux FS)
-├─ .asdf/
+├─ .config/mise/
 ├─ .zshrc
 ├─ .tmux.conf
 └─ .wsl_bootstrap_done
@@ -148,7 +147,7 @@ The script creates:
 ~/.wsl_bootstrap_done
 ```
 
-If present, the script exits early.
+If present, the script still runs in update mode and keeps settings/toolchains in sync.
 
 This makes it:
 
@@ -180,9 +179,7 @@ Edit `install.sh` directly and add sections:
 
 ```bash
 # Infra tools
-asdf plugin add terraform
-asdf install terraform 1.7.5
-asdf global terraform 1.7.5
+mise use -g terraform@1.7.5
 ```
 
 No structural changes required.
@@ -206,12 +203,3 @@ This repository treats WSL as **infrastructure**, not a snowflake dev box.
 Reproducible.
 Deterministic.
 Disposable.
-
----
-
-## License
-
-MIT
-
-```
-```
