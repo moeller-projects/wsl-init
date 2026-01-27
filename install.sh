@@ -65,7 +65,7 @@ grep -q 'starship init zsh' "$HOME/.zshrc" 2>/dev/null || \
 # asdf version manager
 # --------------------------------------------------
 if [[ ! -d "$HOME/.asdf" ]]; then
-  git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.14.0
+  git clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.18.0
 fi
 
 grep -q '.asdf/asdf.sh' "$HOME/.zshrc" 2>/dev/null || cat <<'EOF' >> "$HOME/.zshrc"
