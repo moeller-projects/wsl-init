@@ -68,6 +68,8 @@ if ! command -v mise >/dev/null; then
   curl https://mise.jdx.dev/install.sh | sh
 fi
 
+export PATH="$HOME/.local/bin:$PATH"
+
 grep -q 'mise activate zsh' "$HOME/.zshrc" 2>/dev/null || cat <<'EOF' >> "$HOME/.zshrc"
 eval "$(mise activate zsh)"
 EOF
