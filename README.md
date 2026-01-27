@@ -148,6 +148,7 @@ The script creates:
 ```
 
 If present, the script still runs in update mode and keeps settings/toolchains in sync.
+Config files like `/etc/wsl.conf` and `~/.tmux.conf` are merged (not overwritten).
 
 This makes it:
 

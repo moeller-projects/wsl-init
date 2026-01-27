@@ -27,17 +27,38 @@ ensure_line_sudo() {
 ensure_wsl_systemd() {
   local file="/etc/wsl.conf"
 
-  if sudo grep -qxF "systemd=true" "$file" 2>/dev/null; then
+  if sudo awk '
+    BEGIN { found=0 }
+    {
+      line=$0
+      gsub(/[[:space:]]+/, "", line)
+      if (tolower(line) == "systemd=true") { found=1; exit }
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file" 2>/dev/null; then
     return
   fi
 
-  if sudo grep -qxF "[boot]" "$file" 2>/dev/null; then
+  if sudo awk '
+    BEGIN { found=0 }
+    {
+      line=$0
+      gsub(/[[:space:]]+/, "", line)
+      if (tolower(line) == "[boot]") { found=1; exit }
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file" 2>/dev/null; then
     local tmp
     tmp="$(mktemp)"
     sudo awk '
       BEGIN { in_boot=0; added=0 }
-      /^\[boot\]$/ { print; in_boot=1; next }
-      /^\[/ {
+      {
+        line=$0
+        stripped=line
+        gsub(/[[:space:]]+/, "", stripped)
+      }
+      tolower(stripped) == "[boot]" { print; in_boot=1; next }
+      tolower(stripped) ~ /^\[[^]]+\]$/ {
         if (in_boot && !added) { print "systemd=true"; added=1 }
         in_boot=0
         print
@@ -60,6 +81,11 @@ if [[ "$ID" != "ubuntu" && "$ID" != "debian" ]]; then
   echo "[WSL] Unsupported distro: $ID"
   exit 1
 fi
+
+# --------------------------------------------------
+# Sudo readiness
+# --------------------------------------------------
+sudo -v
 
 # --------------------------------------------------
 # Base packages
@@ -141,7 +167,9 @@ if command -v bun >/dev/null; then
     prettier \
     pnpm \
     nx \
-    @biomejs/biome
+    @biomejs/biome \
+    opencode-ai \
+    @openai/codex
 else
   echo "[WSL] Bun not found; skipping global JS tooling install"
 fi
