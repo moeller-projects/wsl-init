@@ -65,10 +65,13 @@ grep -q 'starship init zsh' "$HOME/.zshrc" 2>/dev/null || \
 # mise version manager
 # --------------------------------------------------
 if ! command -v mise >/dev/null; then
-  curl https://mise.jdx.dev/install.sh | sh
+    sudo apt update -y && sudo apt install -y curl
+    sudo install -dm 755 /etc/apt/keyrings
+    curl -fSs https://mise.jdx.dev/gpg-key.pub | sudo tee /etc/apt/keyrings/mise-archive-keyring.asc 1> /dev/null
+    echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.asc] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list
+    sudo apt update -y
+    sudo apt install -y mise
 fi
-
-export PATH="$HOME/.local/bin:$PATH"
 
 grep -q 'mise activate zsh' "$HOME/.zshrc" 2>/dev/null || cat <<'EOF' >> "$HOME/.zshrc"
 eval "$(mise activate zsh)"
