@@ -28,8 +28,7 @@ sudo apt install -y \
   unzip zip jq \
   ripgrep fd-find bat fzf \
   htop tmux tree neovim \
-  zsh locales \
-  software-properties-common
+  zsh locales
 
 # --------------------------------------------------
 # Locale
