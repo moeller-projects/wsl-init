@@ -169,7 +169,8 @@ if command -v bun >/dev/null; then
     nx \
     @biomejs/biome \
     opencode-ai \
-    @openai/codex
+    @openai/codex \
+    @fission-ai/openspec
 else
   echo "[WSL] Bun not found; skipping global JS tooling install"
 fi
