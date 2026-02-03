@@ -76,6 +76,7 @@ Then reopen the distro.
 * **zsh** (default shell)
 * **Starship** prompt
 * sane aliases (`cat`, `find`)
+* Bun global bin in PATH (`~/.bun/bin`)
 * increased inotify limits
 
 ### Version Management
@@ -98,6 +99,9 @@ Then reopen the distro.
 * pnpm
 * nx
 * @biomejs/biome
+* opencode-ai
+* @openai/codex
+* @fission-ai/openspec
 
 ---
 
