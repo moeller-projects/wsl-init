@@ -139,6 +139,11 @@ fi
 
 ensure_line 'eval "$(mise activate zsh)"' "$HOME/.zshrc"
 
+# --------------------------------------------------
+# Bun global bin path
+# --------------------------------------------------
+ensure_line 'export PATH="$HOME/.bun/bin:$PATH"' "$HOME/.zshrc"
+
 # Load mise for current script
 eval "$(mise activate bash)"
 
