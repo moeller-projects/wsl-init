@@ -100,6 +100,34 @@ sudo apt install -y \
   zsh locales
 
 # --------------------------------------------------
+# Headless Chrome (Google Chrome Stable)
+# --------------------------------------------------
+if ! command -v google-chrome >/dev/null; then
+  echo "[WSL] Installing headless Chrome"
+
+  sudo apt install -y \
+    xvfb libxi6 fonts-liberation libnss3 libxss1 libatk-bridge2.0-0 \
+    libdrm2 libxkbcommon0 libxcomposite1 libxrandr2 libgbm1 \
+    libasound2 libgtk-3-0
+
+  sudo rm -f /etc/apt/sources.list.d/google-chrome*
+  curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | \
+    sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+
+  sudo tee /etc/apt/sources.list.d/google-chrome.sources >/dev/null <<'EOF'
+Types: deb
+URIs: https://dl.google.com/linux/chrome/deb/
+Suites: stable
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/keyrings/google-chrome.gpg
+EOF
+
+  sudo apt update
+  sudo apt install -y google-chrome-stable
+fi
+
+# --------------------------------------------------
 # Locale
 # --------------------------------------------------
 sudo locale-gen en_US.UTF-8
@@ -247,6 +275,11 @@ if command -v nvim >/dev/null; then
   echo "[WSL] nvim: $(nvim --version 2>/dev/null | head -n 1)"
 else
   echo "[WSL] nvim: missing"
+fi
+if command -v google-chrome >/dev/null; then
+  echo "[WSL] chrome: $(google-chrome --version 2>/dev/null)"
+else
+  echo "[WSL] chrome: missing"
 fi
 set -euo pipefail
 
