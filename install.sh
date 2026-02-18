@@ -97,7 +97,7 @@ sudo apt install -y \
   unzip zip jq \
   ripgrep fd-find bat fzf \
   htop tmux tree neovim \
-  zsh locales
+  locales
 
 # --------------------------------------------------
 # Headless Chrome (Google Chrome Stable)
@@ -139,22 +139,6 @@ sudo update-locale LANG=en_US.UTF-8
 ensure_wsl_systemd
 
 # --------------------------------------------------
-# Default shell → zsh
-# --------------------------------------------------
-if [[ "$SHELL" != "$(command -v zsh)" ]]; then
-  sudo usermod -s "$(command -v zsh)" "$USER"
-fi
-
-# --------------------------------------------------
-# Starship prompt
-# --------------------------------------------------
-if ! command -v starship >/dev/null; then
-  curl -sS https://starship.rs/install.sh | sh -s -- -y
-fi
-
-ensure_line 'eval "$(starship init zsh)"' "$HOME/.zshrc"
-
-# --------------------------------------------------
 # mise version manager
 # --------------------------------------------------
 if ! command -v mise >/dev/null; then
@@ -165,12 +149,12 @@ if ! command -v mise >/dev/null; then
     sudo apt install -y mise
 fi
 
-ensure_line 'eval "$(mise activate zsh)"' "$HOME/.zshrc"
+ensure_line 'eval "$(mise activate bash)"' "$HOME/.bashrc"
 
 # --------------------------------------------------
 # Bun global bin path
 # --------------------------------------------------
-ensure_line 'export PATH="$HOME/.bun/bin:$PATH"' "$HOME/.zshrc"
+ensure_line 'export PATH="$HOME/.bun/bin:$PATH"' "$HOME/.bashrc"
 
 # Load mise for current script
 eval "$(mise activate bash)"
@@ -225,8 +209,9 @@ ensure_line "set -g history-limit 10000" "$HOME/.tmux.conf"
 # --------------------------------------------------
 # Quality-of-life tweaks
 # --------------------------------------------------
-ensure_line "alias cat=batcat" "$HOME/.zshrc"
-ensure_line "alias find=fdfind" "$HOME/.zshrc"
+ensure_line "alias cat=batcat" "$HOME/.bashrc"
+ensure_line "alias find=fdfind" "$HOME/.bashrc"
+ensure_line "alias ccusage-codex='bunx @ccusage/codex@latest'" "$HOME/.bashrc"
 
 ensure_line_sudo "fs.inotify.max_user_watches=524288" "/etc/sysctl.d/99-wsl.conf"
 sudo sysctl --system >/dev/null
@@ -265,11 +250,6 @@ if command -v git >/dev/null; then
   echo "[WSL] git: $(git --version 2>/dev/null)"
 else
   echo "[WSL] git: missing"
-fi
-if command -v zsh >/dev/null; then
-  echo "[WSL] zsh: $(zsh --version 2>/dev/null)"
-else
-  echo "[WSL] zsh: missing"
 fi
 if command -v nvim >/dev/null; then
   echo "[WSL] nvim: $(nvim --version 2>/dev/null | head -n 1)"

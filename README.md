@@ -20,7 +20,7 @@ Designed for:
 - ✅ **Bun instead of npm**
 - ✅ **Node available for compatibility**
 - ✅ **.NET 8 preinstalled**
-- ✅ **zsh + Starship**
+- ✅ **Bash (default shell)**
 - ✅ **systemd enabled in WSL**
 - ✅ **tmux / neovim / fzf / ripgrep**
 - ✅ **Safe to re-run**
@@ -68,13 +68,11 @@ Then reopen the distro.
 * ripgrep / fd / bat / fzf
 * htop / tmux / tree
 * neovim
-* zsh
 * locales
 
 ### Shell & UX
 
-* **zsh** (default shell)
-* **Starship** prompt
+* **bash** (default shell)
 * sane aliases (`cat`, `find`)
 * Bun global bin in PATH (`~/.bun/bin`)
 * increased inotify limits
@@ -134,7 +132,7 @@ No path hacks.
 ~
 ├─ dev/              # all projects live here (Linux FS)
 ├─ .config/mise/
-├─ .zshrc
+├─ .bashrc
 ├─ .tmux.conf
 └─ .wsl_bootstrap_done
 ```
