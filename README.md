@@ -15,7 +15,7 @@ Designed for:
 
 - ✅ **One-liner install**
 - ✅ **Single `install.sh` file**
-- ✅ **No `mise`**
+- ✅ **Direct toolchain installs without a version manager**
 - ✅ **Direct installs:** Node.js (NodeSource), Bun (official installer), .NET 8 (Microsoft apt feed)
 - ✅ **Install profiles:** `minimal` (default), `dev`, `full`
 - ✅ **Chrome is opt-in** (`INSTALL_CHROME=1`)

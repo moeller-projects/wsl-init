@@ -88,6 +88,7 @@ apt_update_if_needed() {
   if [[ -f "$APT_UPDATE_STAMP" ]]; then
     last="$(date -r "$APT_UPDATE_STAMP" +%s 2>/dev/null || echo 0)"
   fi
+  # If the stamp is missing or unreadable, "last" stays 0 and we force a fresh update.
 
   if (( now - last < max_age_seconds )); then
     echo "[WSL] apt update skipped (recently updated)"
@@ -212,13 +213,34 @@ install_dotnet() {
 }
 
 install_bun() {
+  local tmp_script
+
   if command -v bun >/dev/null; then
     echo "[WSL] Bun already installed"
     return
   fi
 
   echo "[WSL] Installing Bun ${BUN_VERSION}"
-  curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
+  tmp_script="$(mktemp /tmp/bun-install.XXXXXX.sh)"
+  curl -fsSL https://bun.sh/install -o "$tmp_script"
+
+  if ! grep -q "https://bun.sh" "$tmp_script"; then
+    echo "[WSL] Bun installer verification failed"
+    rm -f "$tmp_script"
+    return 1
+  fi
+
+  bash "$tmp_script" "bun-v${BUN_VERSION}"
+  rm -f "$tmp_script"
+}
+
+ensure_agent_fastpath_loader() {
+  cat > "$HOME/.wsl-agent-fastpath.sh" <<'EOF'
+export WSL_AGENT_FAST_PATH="${WSL_AGENT_FAST_PATH:-1}"
+if [[ "${WSL_AGENT_FAST_PATH:-1}" != "1" && -f "$HOME/.bashrc.heavy" ]]; then
+  source "$HOME/.bashrc.heavy"
+fi
+EOF
 }
 
 bootstrap_dotfiles() {
@@ -408,8 +430,8 @@ fi
 ensure_line 'command -v batcat >/dev/null && alias cat=batcat' "$HOME/.bashrc"
 ensure_line 'command -v fdfind >/dev/null && alias find=fdfind' "$HOME/.bashrc"
 ensure_line 'alias ccusage-codex='\''bunx @ccusage/codex@latest'\''' "$HOME/.bashrc"
-ensure_line 'export WSL_AGENT_FAST_PATH="${WSL_AGENT_FAST_PATH:-1}"' "$HOME/.bashrc"
-ensure_line 'if [[ "${WSL_AGENT_FAST_PATH:-1}" != "1" && -f "$HOME/.bashrc.heavy" ]]; then source "$HOME/.bashrc.heavy"; fi' "$HOME/.bashrc"
+ensure_agent_fastpath_loader
+ensure_line 'source "$HOME/.wsl-agent-fastpath.sh"' "$HOME/.bashrc"
 ensure_line 'export DOTNET_CLI_TELEMETRY_OPTOUT=1' "$HOME/.bashrc"
 ensure_line 'export NPM_CONFIG_UPDATE_NOTIFIER=false' "$HOME/.bashrc"
 ensure_line 'export NPM_CONFIG_FUND=false' "$HOME/.bashrc"
