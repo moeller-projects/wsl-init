@@ -6,13 +6,13 @@ echo "[WSL] Bootstrap starting"
 BOOTSTRAP_FLAG="$HOME/.wsl_bootstrap_done"
 SECTION_CACHE_DIR="$HOME/.cache/wsl-init/sections"
 APT_UPDATE_STAMP="$SECTION_CACHE_DIR/apt_update.stamp"
+APT_UPDATE_MAX_AGE_SECONDS=21600
 
 PROFILE="${WSL_PROFILE:-minimal}"
 INSTALL_CHROME="${INSTALL_CHROME:-0}"
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/moeller-projects/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 NODE_MAJOR="${NODE_MAJOR:-20}"
-BUN_VERSION="${BUN_VERSION:-1.1.4}"
 
 for arg in "$@"; do
   case "$arg" in
@@ -80,9 +80,8 @@ mark_section_done() {
 }
 
 apt_update_if_needed() {
-  local now last max_age_seconds
+  local now last
   now="$(date +%s)"
-  max_age_seconds=21600
   last=0
 
   if [[ -f "$APT_UPDATE_STAMP" ]]; then
@@ -90,7 +89,7 @@ apt_update_if_needed() {
   fi
   # If the stamp is missing or unreadable, "last" stays 0 and we force a fresh update.
 
-  if (( now - last < max_age_seconds )); then
+  if (( now - last < APT_UPDATE_MAX_AGE_SECONDS )); then
     echo "[WSL] apt update skipped (recently updated)"
     return
   fi
@@ -213,25 +212,27 @@ install_dotnet() {
 }
 
 install_bun() {
-  local tmp_script
+  local repo_marker="bun_repo_v1"
+
+  if ! section_done "$repo_marker"; then
+    echo "[WSL] Configuring Bun apt repository"
+    sudo install -dm 0755 /etc/apt/keyrings
+    curl -fsSL https://bun.sh/keys/bun.asc | \
+      sudo gpg --dearmor -o /etc/apt/keyrings/bun.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/bun.gpg] https://apt.bun.sh stable main" | \
+      sudo tee /etc/apt/sources.list.d/bun.list >/dev/null
+    mark_section_done "$repo_marker"
+    rm -f "$APT_UPDATE_STAMP"
+  fi
 
   if command -v bun >/dev/null; then
     echo "[WSL] Bun already installed"
     return
   fi
 
-  echo "[WSL] Installing Bun ${BUN_VERSION}"
-  tmp_script="$(mktemp /tmp/bun-install.XXXXXX.sh)"
-  curl -fsSL https://bun.sh/install -o "$tmp_script"
-
-  if ! grep -q "https://bun.sh" "$tmp_script"; then
-    echo "[WSL] Bun installer verification failed"
-    rm -f "$tmp_script"
-    return 1
-  fi
-
-  bash "$tmp_script" "bun-v${BUN_VERSION}"
-  rm -f "$tmp_script"
+  echo "[WSL] Installing Bun from apt repository"
+  apt_update_if_needed
+  apt_install bun
 }
 
 ensure_agent_fastpath_loader() {

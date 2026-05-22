@@ -16,7 +16,7 @@ Designed for:
 - ✅ **One-liner install**
 - ✅ **Single `install.sh` file**
 - ✅ **Direct toolchain installs without a version manager**
-- ✅ **Direct installs:** Node.js (NodeSource), Bun (official installer), .NET 8 (Microsoft apt feed)
+- ✅ **Direct installs:** Node.js (NodeSource), Bun (official apt repo), .NET 8 (Microsoft apt feed)
 - ✅ **Install profiles:** `minimal` (default), `dev`, `full`
 - ✅ **Chrome is opt-in** (`INSTALL_CHROME=1`)
 - ✅ **`--no-install-recommends`** for slimmer apt installs
@@ -108,7 +108,7 @@ curl -fsSL https://raw.githubusercontent.com/moeller-projects/wsl-init/main/inst
 - unzip, zip, jq
 - locales, gnupg
 - Node.js 20.x (NodeSource apt)
-- Bun (`bun-v1.1.4` default)
+- Bun (official apt package)
 - .NET SDK 8.0
 
 ### Dev extras (`dev`/`full`)
