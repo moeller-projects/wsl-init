@@ -249,12 +249,12 @@ bootstrap_dotfiles() {
 
   if [[ -d "$DOTFILES_DIR/.git" ]]; then
     if ! git -C "$DOTFILES_DIR" pull --ff-only; then
-      echo "[WSL] Warning: dotfiles update failed (continuing)"
+      echo "[WSL] Warning: dotfiles update failed (local changes/conflicts or network issue, continuing)"
       return 0
     fi
   else
     if ! git clone --depth 1 "$DOTFILES_REPO" "$DOTFILES_DIR"; then
-      echo "[WSL] Warning: dotfiles clone failed (continuing)"
+      echo "[WSL] Warning: dotfiles clone failed (check network access and DOTFILES_REPO URL, continuing)"
       return 0
     fi
   fi
@@ -269,7 +269,7 @@ bootstrap_dotfiles() {
     if [[ -f "$script_path" ]]; then
       echo "[WSL] Running dotfiles script: ${script_path#$DOTFILES_DIR/}"
       if ! (cd "$DOTFILES_DIR" && bash "./$(basename "$script_path")"); then
-        echo "[WSL] Warning: dotfiles script failed (continuing)"
+        echo "[WSL] Warning: dotfiles script ${script_path#$DOTFILES_DIR/} failed (continuing)"
       fi
       return 0
     fi
