@@ -10,9 +10,12 @@ APT_UPDATE_MAX_AGE_SECONDS=21600
 
 PROFILE="${WSL_PROFILE:-minimal}"
 INSTALL_CHROME="${INSTALL_CHROME:-0}"
+INSTALL_DOTFILES="${INSTALL_DOTFILES:-0}"
+DOTFILES_UPDATE="${DOTFILES_UPDATE:-0}"
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/moeller-projects/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 NODE_MAJOR="${NODE_MAJOR:-20}"
+BUN_GLOBAL_TOOLS_UPDATE="${BUN_GLOBAL_TOOLS_UPDATE:-0}"
 
 for arg in "$@"; do
   case "$arg" in
@@ -30,6 +33,15 @@ for arg in "$@"; do
       ;;
     --install-chrome)
       INSTALL_CHROME="1"
+      ;;
+    --install-dotfiles)
+      INSTALL_DOTFILES="1"
+      ;;
+    --update-dotfiles)
+      DOTFILES_UPDATE="1"
+      ;;
+    --update-bun-tools)
+      BUN_GLOBAL_TOOLS_UPDATE="1"
       ;;
     *)
       echo "[WSL] Unknown argument: $arg"
@@ -56,6 +68,7 @@ fi
 
 echo "[WSL] Profile: $PROFILE"
 echo "[WSL] Chrome install: $INSTALL_CHROME (set INSTALL_CHROME=1 or --install-chrome)"
+echo "[WSL] Dotfiles bootstrap: $INSTALL_DOTFILES (set INSTALL_DOTFILES=1 or --install-dotfiles)"
 
 ensure_line() {
   local line="$1"
@@ -236,6 +249,9 @@ install_bun() {
 }
 
 ensure_agent_fastpath_loader() {
+  if [[ -f "$HOME/.wsl-agent-fastpath.sh" ]]; then
+    return
+  fi
   cat > "$HOME/.wsl-agent-fastpath.sh" <<'EOF'
 export WSL_AGENT_FAST_PATH="${WSL_AGENT_FAST_PATH:-1}"
 if [[ "${WSL_AGENT_FAST_PATH:-1}" != "1" && -f "$HOME/.bashrc.heavy" ]]; then
@@ -245,12 +261,26 @@ EOF
 }
 
 bootstrap_dotfiles() {
+  if [[ "$INSTALL_DOTFILES" != "1" ]]; then
+    echo "[WSL] Dotfiles bootstrap skipped (set INSTALL_DOTFILES=1 or --install-dotfiles)"
+    return 0
+  fi
+
+  if [[ "$DOTFILES_UPDATE" != "1" ]] && section_done "dotfiles_bootstrap_v1"; then
+    echo "[WSL] Dotfiles bootstrap already completed"
+    return 0
+  fi
+
   echo "[WSL] Bootstrapping dotfiles from $DOTFILES_REPO"
 
   if [[ -d "$DOTFILES_DIR/.git" ]]; then
-    if ! git -C "$DOTFILES_DIR" pull --ff-only; then
-      echo "[WSL] Warning: dotfiles update failed (local changes/conflicts or network issue, continuing)"
-      return 0
+    if [[ "$DOTFILES_UPDATE" == "1" ]]; then
+      if ! git -C "$DOTFILES_DIR" pull --ff-only; then
+        echo "[WSL] Warning: dotfiles update failed (local changes/conflicts or network issue, continuing)"
+        return 0
+      fi
+    else
+      echo "[WSL] Dotfiles update skipped (set DOTFILES_UPDATE=1 or --update-dotfiles)"
     fi
   else
     if ! git clone --depth 1 "$DOTFILES_REPO" "$DOTFILES_DIR"; then
@@ -267,15 +297,18 @@ bootstrap_dotfiles() {
     "$DOTFILES_DIR/apply.sh"
   do
     if [[ -f "$script_path" ]]; then
-      echo "[WSL] Running dotfiles script: ${script_path#$DOTFILES_DIR/}"
+      echo "[WSL] Running dotfiles script: ${script_path#"$DOTFILES_DIR"/}"
       if ! (cd "$DOTFILES_DIR" && bash "./$(basename "$script_path")"); then
-        echo "[WSL] Warning: dotfiles script ${script_path#$DOTFILES_DIR/} failed (continuing)"
+        echo "[WSL] Warning: dotfiles script ${script_path#"$DOTFILES_DIR"/} failed (continuing)"
+      else
+        mark_section_done "dotfiles_bootstrap_v1"
       fi
       return 0
     fi
   done
 
   echo "[WSL] No known dotfiles bootstrap script found (continuing)"
+  mark_section_done "dotfiles_bootstrap_v1"
 }
 
 # --------------------------------------------------
@@ -346,8 +379,12 @@ ensure_line 'export PATH="$HOME/.local/bin:$HOME/.bun/bin:$PATH"' "$HOME/.bashrc
 # Bun-based global tooling (dev/full profiles)
 # --------------------------------------------------
 if [[ "$PROFILE" == "dev" || "$PROFILE" == "full" ]]; then
-  if ! section_done "bun_global_tools_v1"; then
-    echo "[WSL] Installing JS tooling via Bun"
+  if ! section_done "bun_global_tools_v1" || [[ "$BUN_GLOBAL_TOOLS_UPDATE" == "1" ]]; then
+    if [[ "$BUN_GLOBAL_TOOLS_UPDATE" == "1" ]] && section_done "bun_global_tools_v1"; then
+      echo "[WSL] Updating JS tooling via Bun"
+    else
+      echo "[WSL] Installing JS tooling via Bun"
+    fi
     if command -v bun >/dev/null; then
       bun add -g \
         typescript \
@@ -364,7 +401,7 @@ if [[ "$PROFILE" == "dev" || "$PROFILE" == "full" ]]; then
       echo "[WSL] Bun not found; skipping global JS tooling install"
     fi
   else
-    echo "[WSL] Global JS tooling already installed"
+    echo "[WSL] Global JS tooling already installed (set BUN_GLOBAL_TOOLS_UPDATE=1 or --update-bun-tools to refresh)"
   fi
 fi
 

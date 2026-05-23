@@ -20,7 +20,7 @@ Designed for:
 - ✅ **Install profiles:** `minimal` (default), `dev`, `full`
 - ✅ **Chrome is opt-in** (`INSTALL_CHROME=1`)
 - ✅ **`--no-install-recommends`** for slimmer apt installs
-- ✅ **Dotfiles bootstrap** from `moeller-projects/dotfiles`
+- ✅ **Opt-in dotfiles bootstrap** from `moeller-projects/dotfiles`
 - ✅ **Section markers** for faster reruns
 - ✅ **WSL systemd + quality-of-life defaults**
 
@@ -77,24 +77,32 @@ INSTALL_CHROME=1 curl -fsSL https://raw.githubusercontent.com/moeller-projects/w
 
 ---
 
-## Dotfiles Bootstrap
+## Dotfiles Bootstrap (Opt-In)
 
-The script automatically bootstraps:
+Dotfiles bootstrap is disabled by default. Enable it with:
+
+```bash
+INSTALL_DOTFILES=1 curl -fsSL https://raw.githubusercontent.com/moeller-projects/wsl-init/main/install.sh | bash
+```
+
+Then the script bootstraps:
 
 - Repo: `https://github.com/moeller-projects/dotfiles.git`
 - Target directory: `~/.dotfiles`
 
 Behavior:
 - Clone if missing
-- Pull (`--ff-only`) if present
+- Pull (`--ff-only`) only when `DOTFILES_UPDATE=1`
 - Run first available script from: `bootstrap.sh`, `install.sh`, `setup.sh`, `apply.sh`
 - Non-fatal on network/script failures (bootstrap continues)
+- Cache successful bootstrap to speed reruns
 
 Overrides:
 
 ```bash
 DOTFILES_REPO=https://github.com/moeller-projects/dotfiles.git \
 DOTFILES_DIR=$HOME/.dotfiles \
+DOTFILES_UPDATE=1 \
 curl -fsSL https://raw.githubusercontent.com/moeller-projects/wsl-init/main/install.sh | bash
 ```
 
@@ -119,6 +127,7 @@ curl -fsSL https://raw.githubusercontent.com/moeller-projects/wsl-init/main/inst
 - Bun global tools:
   - typescript, eslint, prettier, pnpm, nx
   - @biomejs/biome, opencode-ai, @openai/codex, @fission-ai/openspec
+  - Set `BUN_GLOBAL_TOOLS_UPDATE=1` (or `--update-bun-tools`) to refresh on reruns
 
 ### Full extras (`full`)
 
