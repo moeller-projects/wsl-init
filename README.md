@@ -100,6 +100,7 @@ Behavior:
 Overrides:
 
 ```bash
+INSTALL_DOTFILES=1 \
 DOTFILES_REPO=https://github.com/moeller-projects/dotfiles.git \
 DOTFILES_DIR=$HOME/.dotfiles \
 DOTFILES_UPDATE=1 \
