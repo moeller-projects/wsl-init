@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ====================================================
-# Configuration -- every pinned version / tunable lives
+# Configuration — every pinned version / tunable lives
 # here. Edit this block to bump toolchain versions or
 # change defaults; nothing else in the script should
 # need touching for routine updates.
@@ -22,7 +22,7 @@ WORKSPACE_DIR="$HOME/dev"
 # System tuning
 INOTIFY_MAX_WATCHES="524288"
 
-# Flags (defaults -- overridden by CLI args below)
+# Flags (defaults — overridden by CLI args below)
 WITH_CHROME=0
 
 # --------------------------------------------------
@@ -39,7 +39,7 @@ echo "[WSL] Bootstrap starting"
 
 FIRST_RUN=1
 if [[ -f "$BOOTSTRAP_FLAG" ]]; then
-  echo "[WSL] Already bootstrapped -- continuing update"
+  echo "[WSL] Already bootstrapped — continuing update"
   FIRST_RUN=0
 fi
 
@@ -138,7 +138,8 @@ sudo apt install -y \
   unzip zip jq \
   ripgrep fd-find bat fzf \
   htop tmux tree neovim \
-  locales
+  locales \
+  libicu-dev libssl-dev  # required by the .NET SDK (globalization + TLS) — dotnet-install.sh doesn't pull these in itself
 
 # --------------------------------------------------
 # Headless Chrome (opt-in via --with-chrome)
@@ -186,7 +187,7 @@ echo "[WSL] Applying recommended /etc/wsl.conf settings"
 # Enable systemd so services (docker, ssh-agent, etc.) work normally
 ensure_wsl_conf_setting "boot" "systemd" "true"
 
-# Don't append Windows PATH into Linux PATH -- keeps `which`/PATH lookups
+# Don't append Windows PATH into Linux PATH — keeps `which`/PATH lookups
 # fast and avoids Linux tools accidentally resolving to .exe shims
 ensure_wsl_conf_setting "interop" "appendWindowsPath" "false"
 
@@ -198,7 +199,7 @@ ensure_wsl_conf_setting "interop" "enabled" "true"
 ensure_wsl_conf_setting "automount" "options" "metadata"
 
 # --------------------------------------------------
-# Node.js -- NodeSource's official setup script (Active LTS)
+# Node.js — NodeSource's official setup script (Active LTS)
 # --------------------------------------------------
 if ! command -v node >/dev/null || [[ "$(node -v)" != v"$NODE_MAJOR".* ]]; then
   echo "[WSL] Installing Node.js $NODE_MAJOR via NodeSource"
@@ -209,7 +210,7 @@ else
 fi
 
 # --------------------------------------------------
-# Bun -- official install script
+# Bun — official install script
 # --------------------------------------------------
 if ! command -v bun >/dev/null; then
   echo "[WSL] Installing Bun"
@@ -226,7 +227,7 @@ ensure_line 'export PATH="$HOME/.bun/bin:$PATH"' "$HOME/.bashrc"
 export PATH="$HOME/.bun/bin:$PATH"
 
 # --------------------------------------------------
-# .NET SDK -- Microsoft's official dotnet-install script
+# .NET SDK — Microsoft's official dotnet-install script
 # --------------------------------------------------
 if ! command -v dotnet >/dev/null || ! dotnet --list-sdks 2>/dev/null | grep -q "^${DOTNET_CHANNEL}"; then
   echo "[WSL] Installing .NET SDK ($DOTNET_CHANNEL channel)"
@@ -244,7 +245,7 @@ export DOTNET_ROOT="$HOME/.dotnet"
 export PATH="$HOME/.dotnet:$PATH"
 
 # --------------------------------------------------
-# Rust -- rustup, the official installer (rust-lang.org/tools/install)
+# Rust — rustup, the official installer (rust-lang.org/tools/install)
 # --------------------------------------------------
 if ! command -v rustc >/dev/null; then
   echo "[WSL] Installing Rust via rustup"
@@ -258,7 +259,7 @@ ensure_line '. "$HOME/.cargo/env"' "$HOME/.bashrc"
 [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 
 # --------------------------------------------------
-# Python -- uv, the official Astral installer, as version manager
+# Python — uv, the official Astral installer, as version manager
 # (installs & pins a Python version, replaces pipx for global tools)
 # --------------------------------------------------
 if ! command -v uv >/dev/null; then
@@ -393,7 +394,7 @@ If Ollama runs on Windows (not inside WSL), from here:
 
        OLLAMA_HOST=0.0.0.0
 
-  2. From WSL, reach it via the Windows host IP -- NOT localhost,
+  2. From WSL, reach it via the Windows host IP — NOT localhost,
      unless you've enabled mirrored networking (see option 3).
      The host IP is your default gateway inside WSL:
 
@@ -408,15 +409,14 @@ If Ollama runs on Windows (not inside WSL), from here:
        [wsl2]
        networkingMode=mirrored
 
-     Then `wsl --shutdown` and reopen -- after that,
+     Then `wsl --shutdown` and reopen — after that,
      http://localhost:11434 works directly from WSL, no gateway
      lookup needed.
 
 Optional convenience alias 'ollama-host' has been added to your
-.bashrc -- run `source ~/.bashrc`, then:
+.bashrc — run `source ~/.bashrc`, then:
 
   curl http://$(ollama-host):11434
 
 --------------------------------------------------
 EOF
-
